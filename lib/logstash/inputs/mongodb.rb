@@ -19,6 +19,17 @@ class LogStash::Inputs::MongoDB < LogStash::Inputs::Base
   # Example URI: mongodb://mydb.host:27017/mydbname?ssl=true
   config :uri, :validate => :string, :required => true
 
+  # The user to use, in case mongo authentication is enabled.
+  # The default means that no authentication will be used.
+  config :user, :validate => :string, :default => nil
+
+  # The password to use, in case mongo authentication is enabled.
+  config :password, :validate => :string, :default => "Default password..."
+
+  # Whether to use ssl when connecting to the mongoDB.
+  # The default, means that ssl will not be used.
+  config :use_ssl, :validate => :boolean, :default => false
+
   # The directory that will contain the sqlite database file.
   config :placeholder_db_dir, :validate => :string, :required => true
 
@@ -170,7 +181,12 @@ class LogStash::Inputs::MongoDB < LogStash::Inputs::Base
     require "jdbc/sqlite3"
     require "sequel"
     placeholder_db_path = File.join(@placeholder_db_dir, @placeholder_db_name)
-    conn = Mongo::Client.new(@uri)
+    if @user
+      conn = Mongo::Client.new(@uri, :user => @user, :password => @password, :ssl => @use_ssl)
+    else
+      conn = Mongo::Client.new(@uri)
+    end
+
 
     @host = Socket.gethostname
     @logger.info("Registering MongoDB input")
